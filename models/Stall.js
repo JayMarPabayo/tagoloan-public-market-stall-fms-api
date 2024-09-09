@@ -2,16 +2,14 @@ const mongoose = require("mongoose");
 
 const stallSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
+    section: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Section",
       required: true,
     },
-    type: {
-      type: String,
+    number: {
+      type: Number,
       required: true,
-    },
-    size: {
-      type: String,
     },
     cost: {
       type: Number,
@@ -29,5 +27,23 @@ const stallSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+stallSchema.pre("save", async function (next) {
+  if (!this.isNew) {
+    return next();
+  }
+
+  try {
+    const lastStall = await mongoose
+      .model("Stall")
+      .findOne({ section: this.section })
+      .sort({ number: -1 });
+
+    this.number = lastStall ? lastStall.number + 1 : 1;
+    next();
+  } catch (err) {
+    next(err);
+  }
+});
 
 module.exports = mongoose.model("Stall", stallSchema);
