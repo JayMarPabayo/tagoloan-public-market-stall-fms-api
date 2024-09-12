@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 
 const Stall = require("../models/Stall");
+const Section = require("../models/Section");
 
 const getStalls = asyncHandler(async (req, res) => {
   const stalls = await Stall.find().lean();
@@ -23,7 +24,24 @@ const createStall = asyncHandler(async (req, res) => {
     });
   }
 
-  const newStall = { section, cost, notes };
+  const sectionData = await Section.findById(section).exec();
+  if (!sectionData) {
+    return res.status(400).json({
+      message: "Invalid section ID provided.",
+    });
+  }
+
+  const group = sectionData.group;
+
+  const lastStall = await Stall.findOne({
+    section: { $in: await Section.find({ group }).select("_id") },
+  })
+    .sort({ number: -1 })
+    .lean();
+
+  const nextStallNumber = lastStall ? lastStall.number + 1 : 1;
+
+  const newStall = { section, cost, notes, number: nextStallNumber };
 
   const stall = await Stall.create(newStall);
 
@@ -39,23 +57,36 @@ const createStall = asyncHandler(async (req, res) => {
 });
 
 const updateStall = asyncHandler(async (req, res) => {
-  const { cost, notes } = req.body;
+  const { id, number, cost, notes } = req.body;
 
-  if (!id || !cost) {
+  if (!id || !number || !cost) {
     return res.status(400).json({
-      message: "Stall cost is required.",
+      message: "Stall cost & number are required.",
     });
   }
 
   const stall = await Stall.findById(id).exec();
 
   if (!stall) {
-    res.status(400).json({
+    return res.status(404).json({
       message: "Stall not found",
     });
   }
 
+  const existingStall = await Stall.findOne({
+    number,
+    _id: { $ne: id },
+  }).exec();
+
+  if (existingStall) {
+    return res.status(400).json({
+      message: `Stall number ${number} already exists.`,
+    });
+  }
+
+  stall.number = number;
   stall.cost = cost;
+  stall.notes = notes;
 
   const updatedStall = await stall.save();
 

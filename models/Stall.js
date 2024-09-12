@@ -28,22 +28,4 @@ const stallSchema = new mongoose.Schema(
   }
 );
 
-stallSchema.pre("save", async function (next) {
-  if (!this.isNew) {
-    return next();
-  }
-
-  try {
-    const lastStall = await mongoose
-      .model("Stall")
-      .findOne({ section: this.section })
-      .sort({ number: -1 });
-
-    this.number = lastStall ? lastStall.number + 1 : 1;
-    next();
-  } catch (err) {
-    next(err);
-  }
-});
-
 module.exports = mongoose.model("Stall", stallSchema);

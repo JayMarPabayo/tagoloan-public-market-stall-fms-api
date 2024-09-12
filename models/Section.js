@@ -10,6 +10,10 @@ const sectionSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    stallsPerRow: {
+      type: Number,
+      required: true,
+    },
   },
   {
     timestamps: true,

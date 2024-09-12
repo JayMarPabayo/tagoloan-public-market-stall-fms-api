@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 
 const Section = require("../models/Section");
+const Stall = require("../models/Stall");
 
 const getSections = asyncHandler(async (req, res) => {
   const sections = await Section.find().lean();
@@ -15,21 +16,20 @@ const getSections = asyncHandler(async (req, res) => {
 });
 
 const createSection = asyncHandler(async (req, res) => {
-  const { group, name } = req.body;
+  const { group, name, stallsPerRow, numberOfStalls } = req.body;
 
-  if (!group || !name) {
+  if ((!group || !name || !stallsPerRow, !numberOfStalls)) {
     return res.status(400).json({
       message: "All fields are required.",
     });
   }
 
   const duplicate = await Section.findOne({
-    name,
     group,
+    name,
   })
     .collation({ locale: "en", strength: 2 })
-    .lean()
-    .exec();
+    .lean();
 
   if (duplicate) {
     return res.status(409).json({
@@ -37,13 +37,32 @@ const createSection = asyncHandler(async (req, res) => {
     });
   }
 
-  const newSection = { name };
+  const newSection = { name, group, stallsPerRow };
 
   const section = await Section.create(newSection);
 
   if (section) {
+    const lastStall = await Stall.findOne({
+      section: { $in: await Section.find({ group }).select("_id") },
+    })
+      .sort({ number: -1 })
+      .lean();
+
+    const startNumber = lastStall ? lastStall.number + 1 : 1;
+
+    const stalls = [];
+    for (let i = 0; i < numberOfStalls; i++) {
+      stalls.push({
+        section: section._id,
+        cost: 20,
+        notes: "",
+        number: startNumber + i,
+      });
+    }
+    await Stall.insertMany(stalls);
+
     res.status(201).json({
-      message: `New section ${name} created`,
+      message: `${section.group} ${section.name} with stalls created`,
     });
   } else {
     res.status(400).json({
@@ -53,9 +72,9 @@ const createSection = asyncHandler(async (req, res) => {
 });
 
 const updateSection = asyncHandler(async (req, res) => {
-  const { group, name } = req.body;
+  const { group, name, stallsPerRow } = req.body;
 
-  if (!id || !group || !name) {
+  if (!id || !group || !name || !stallsPerRow) {
     return res.status(400).json({
       message: "All fields are required.",
     });
@@ -69,7 +88,7 @@ const updateSection = asyncHandler(async (req, res) => {
     });
   }
 
-  const duplicate = await Section.findOne({ name, group })
+  const duplicate = await Section.findOne({ name, group, stallsPerRow })
     .collation({ locale: "en", strength: 2 })
     .lean()
     .exec();
@@ -82,11 +101,12 @@ const updateSection = asyncHandler(async (req, res) => {
 
   section.group = group;
   section.name = name;
+  section.stallsPerRow = stallsPerRow;
 
   const updatedSection = await section.save();
 
   res.json({
-    message: `${updatedSection.name} successfully updated`,
+    message: `${updatedSection.group} ${updatedSection.name} successfully updated`,
   });
 });
 
@@ -106,6 +126,8 @@ const deleteSection = asyncHandler(async (req, res) => {
       message: "Section not found",
     });
   }
+
+  await Stall.deleteMany({ section: id });
 
   const deletedSection = await section.deleteOne();
 
