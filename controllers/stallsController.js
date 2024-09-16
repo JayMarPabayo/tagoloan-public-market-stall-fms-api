@@ -75,6 +75,7 @@ const updateStall = asyncHandler(async (req, res) => {
 
   const existingStall = await Stall.findOne({
     number,
+    section: stall.section,
     _id: { $ne: id },
   }).exec();
 

@@ -26,6 +26,7 @@ const login = asyncHandler(async (req, res) => {
   const accessToken = jwt.sign(
     {
       UserInfo: {
+        id: foundUser.id,
         fullname: foundUser.fullname,
         username: foundUser.username,
         role: foundUser.role,
@@ -53,6 +54,67 @@ const login = asyncHandler(async (req, res) => {
   res.json({ accessToken });
 });
 
+const updateAccount = asyncHandler(async (req, res) => {
+  const { fullname, id, username, password, newPassword } = req.body;
+
+  if (!fullname || !id || !username) {
+    return res.status(400).json({
+      message: "All fields are required.",
+    });
+  }
+
+  const user = await User.findById(id).exec();
+
+  if (!user) {
+    res.status(400).json({
+      message: "User not found",
+    });
+  }
+
+  const duplicate = await User.findOne({ username })
+    .collation({ locale: "en", strength: 2 })
+    .lean()
+    .exec();
+
+  if (duplicate && duplicate?._id.toString() !== id) {
+    return res.status(409).json({
+      message: "Username already exists",
+    });
+  }
+
+  if (newPassword) {
+    const match = await bcrypt.compare(password, user.password);
+
+    if (!password) {
+      return res.status(403).json({
+        message: "Current password is required.",
+      });
+    }
+    if (!match) {
+      return res.status(403).json({
+        message: "Current password is incorrect.",
+      });
+    }
+
+    if (!newPassword) {
+      return res.status(400).json({
+        message: "Password can't be blank.",
+      });
+    }
+
+    user.password = await bcrypt.hash(newPassword, 10);
+  }
+
+  user.fullname = fullname;
+  user.username = username;
+
+  await user.save();
+
+  res.json({
+    message: `Account successfully updated`,
+  });
+});
+
 // @desc Refresh
 // @route GET /auth/refresh
 // @access Public - because access token has expired
@@ -78,6 +140,7 @@ const refresh = (req, res) => {
       const accessToken = jwt.sign(
         {
           UserInfo: {
+            id: foundUser.id,
             fullname: foundUser.fullname,
             username: foundUser.username,
             role: foundUser.role,
@@ -106,4 +169,5 @@ module.exports = {
   login,
   refresh,
   logout,
+  updateAccount,
 };
