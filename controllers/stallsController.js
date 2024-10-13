@@ -115,6 +115,14 @@ const deleteStall = asyncHandler(async (req, res) => {
 
   const deletedStall = await stall.deleteOne();
 
+  // Check if the section has any other stalls
+  const remainingStalls = await Stall.find({ section: stall.section }).lean();
+
+  // If no more stalls are found, delete the section
+  if (!remainingStalls.length) {
+    await Section.findByIdAndDelete(stall.section).exec();
+  }
+
   const response = `Stall ${deletedStall.number} deleted successfully`;
 
   res.json(response);

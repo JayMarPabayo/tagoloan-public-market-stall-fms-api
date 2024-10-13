@@ -12,13 +12,6 @@ const rentalSchema = new mongoose.Schema(
       ref: "Stall",
       required: true,
     },
-    startDate: {
-      type: Date,
-      required: true,
-    },
-    endDate: {
-      type: Date,
-    },
   },
   {
     timestamps: true,
