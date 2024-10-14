@@ -29,6 +29,7 @@ app.use("/users", require("./routes/userRoutes"));
 app.use("/vendors", require("./routes/vendorRoutes"));
 app.use("/sections", require("./routes/sectionRoutes"));
 app.use("/stalls", require("./routes/stallRoutes"));
+app.use("/rentals", require("./routes/rentalRoutes"));
 
 app.all("*", (req, res) => {
   res.status(404);
