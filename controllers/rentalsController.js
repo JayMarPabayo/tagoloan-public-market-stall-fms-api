@@ -49,6 +49,8 @@ const createRental = asyncHandler(async (req, res) => {
   const rental = await Rental.create(newRental);
 
   if (rental) {
+    await Stall.findByIdAndUpdate(stall, { available: false });
+
     res.status(201).json({
       message: "New rental created",
     });
