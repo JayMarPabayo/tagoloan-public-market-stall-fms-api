@@ -3,7 +3,26 @@ const asyncHandler = require("express-async-handler");
 const Vendor = require("../models/Vendor");
 
 const getVendors = asyncHandler(async (req, res) => {
-  const vendors = await Vendor.find().lean();
+  const vendors = await Vendor.aggregate([
+    {
+      $lookup: {
+        from: "rentals",
+        localField: "_id",
+        foreignField: "vendor",
+        as: "rentals",
+      },
+    },
+    {
+      $addFields: {
+        hasRental: { $gt: [{ $size: "$rentals" }, 0] },
+      },
+    },
+    {
+      $project: {
+        rentals: 0,
+      },
+    },
+  ]);
 
   if (!vendors?.length) {
     return res.status(400).json({

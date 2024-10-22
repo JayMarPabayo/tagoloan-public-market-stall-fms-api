@@ -3,17 +3,38 @@ const asyncHandler = require("express-async-handler");
 const Rental = require("../models/Rental");
 const Vendor = require("../models/Vendor");
 const Stall = require("../models/Stall");
+const Payment = require("../models/Payment");
 
 const getRentals = asyncHandler(async (req, res) => {
+  // Fetch all rentals with related vendor and stall data
   const rentals = await Rental.find()
     .populate("vendor")
-    .populate("stall")
+    .populate({
+      path: "stall",
+      populate: {
+        path: "section",
+      },
+    })
     .lean();
 
   if (!rentals?.length) {
     return res.status(400).json({
       message: "No rentals found",
     });
+  }
+
+  for (let rental of rentals) {
+    const payments = await Payment.find({ rental: rental._id }).lean();
+
+    let daysPaid = payments.reduce((total, payment) => {
+      return total + payment.amount / payment.cost;
+    }, 0);
+
+    let dueDate = new Date(rental.startDate);
+    dueDate.setDate(dueDate.getDate() + Math.floor(daysPaid));
+
+    rental.daysPaid = daysPaid;
+    rental.dueDate = dueDate;
   }
 
   res.json(rentals);
