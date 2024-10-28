@@ -4,7 +4,7 @@ const Stall = require("../models/Stall");
 const Section = require("../models/Section");
 
 const getStalls = asyncHandler(async (req, res) => {
-  const stalls = await Stall.find().lean();
+  const stalls = await Stall.find().populate("section").lean();
 
   if (!stalls?.length) {
     return res.status(400).json({
@@ -115,10 +115,8 @@ const deleteStall = asyncHandler(async (req, res) => {
 
   const deletedStall = await stall.deleteOne();
 
-  // Check if the section has any other stalls
   const remainingStalls = await Stall.find({ section: stall.section }).lean();
 
-  // If no more stalls are found, delete the section
   if (!remainingStalls.length) {
     await Section.findByIdAndDelete(stall.section).exec();
   }
