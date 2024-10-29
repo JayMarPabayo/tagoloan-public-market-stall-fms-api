@@ -15,6 +15,7 @@ const getRentals = asyncHandler(async (req, res) => {
         path: "section",
       },
     })
+    .sort({ updatedAt: -1 })
     .lean();
 
   if (!rentals?.length) {
@@ -150,9 +151,37 @@ const deleteRental = asyncHandler(async (req, res) => {
   res.json(response);
 });
 
+const vacateRental = asyncHandler(async (req, res) => {
+  const { id } = req.body;
+
+  if (!id) {
+    return res.status(400).json({
+      message: "Rental ID is required",
+    });
+  }
+
+  const rental = await Rental.findById(id).exec();
+
+  if (!rental) {
+    return res.status(404).json({
+      message: "Rental not found",
+    });
+  }
+
+  rental.endDate = Date.now();
+  await rental.save();
+
+  await Stall.findByIdAndUpdate(rental.stall, { available: true }).exec();
+
+  res.json({
+    message: `Rental vacated successfully. Stall ${rental.stall} is now available.`,
+  });
+});
+
 module.exports = {
   getRentals,
   createRental,
   updateRental,
   deleteRental,
+  vacateRental,
 };

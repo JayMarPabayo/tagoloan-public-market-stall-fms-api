@@ -5,6 +5,7 @@ const {
   createRental,
   updateRental,
   deleteRental,
+  vacateRental,
 } = require("../controllers/rentalsController");
 
 const router = express.Router();
@@ -17,5 +18,7 @@ router
   .post(createRental)
   .patch(updateRental)
   .delete(deleteRental);
+
+router.post("/vacate", vacateRental);
 
 module.exports = router;

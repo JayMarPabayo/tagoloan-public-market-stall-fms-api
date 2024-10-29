@@ -26,13 +26,4 @@ const vendorSchema = new mongoose.Schema(
   }
 );
 
-vendorSchema.pre(
-  "deleteOne",
-  { document: true, query: false },
-  async function (next) {
-    await Rental.deleteMany({ vendor: this._id });
-    next();
-  }
-);
-
 module.exports = mongoose.model("Vendor", vendorSchema);

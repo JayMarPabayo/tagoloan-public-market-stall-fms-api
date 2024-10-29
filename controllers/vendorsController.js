@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 
 const Vendor = require("../models/Vendor");
+const Rental = require("../models/Rental");
 
 const getVendors = asyncHandler(async (req, res) => {
   const vendors = await Vendor.aggregate([
@@ -127,6 +128,8 @@ const deleteVendor = asyncHandler(async (req, res) => {
       message: "Vendor not found",
     });
   }
+
+  await Rental.deleteMany({ vendor: vendor._id }).exec();
 
   const deletedVendor = await vendor.deleteOne();
 

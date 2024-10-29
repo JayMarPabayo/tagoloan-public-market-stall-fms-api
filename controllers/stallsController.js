@@ -2,6 +2,7 @@ const asyncHandler = require("express-async-handler");
 
 const Stall = require("../models/Stall");
 const Section = require("../models/Section");
+const Rental = require("../models/Rental");
 
 const getStalls = asyncHandler(async (req, res) => {
   const stalls = await Stall.find().populate("section").lean();
@@ -112,6 +113,8 @@ const deleteStall = asyncHandler(async (req, res) => {
       message: "Stall not found",
     });
   }
+
+  await Rental.deleteMany({ stall: stall._id }).exec();
 
   const deletedStall = await stall.deleteOne();
 

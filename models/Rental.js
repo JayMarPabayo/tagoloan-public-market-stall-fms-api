@@ -16,6 +16,10 @@ const rentalSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    endDate: {
+      type: Date,
+      default: null,
+    },
   },
 
   {
