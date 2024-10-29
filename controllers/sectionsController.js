@@ -18,7 +18,7 @@ const getSections = asyncHandler(async (req, res) => {
 const createSection = asyncHandler(async (req, res) => {
   const { group, name, stallsPerRow, numberOfStalls } = req.body;
 
-  if ((!group || !name || !stallsPerRow, !numberOfStalls)) {
+  if (!group || !name || !stallsPerRow || !numberOfStalls) {
     return res.status(400).json({
       message: "All fields are required.",
     });
@@ -72,7 +72,7 @@ const createSection = asyncHandler(async (req, res) => {
 });
 
 const updateSection = asyncHandler(async (req, res) => {
-  const { group, name, stallsPerRow } = req.body;
+  const { id, group, name, stallsPerRow } = req.body;
 
   if (!id || !group || !name || !stallsPerRow) {
     return res.status(400).json({
@@ -131,7 +131,7 @@ const deleteSection = asyncHandler(async (req, res) => {
 
   const deletedSection = await section.deleteOne();
 
-  const response = `Name ${deletedSection.name} with ID ${deletedSection.i_id} deleted successfully`;
+  const response = `Name ${deletedSection.name} with ID ${deletedSection._id} deleted successfully`;
 
   res.json(response);
 });

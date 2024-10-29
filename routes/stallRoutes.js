@@ -5,6 +5,7 @@ const {
   createStall,
   updateStall,
   deleteStall,
+  addStallToSection,
 } = require("../controllers/stallsController");
 
 const router = express.Router();
@@ -17,5 +18,7 @@ router
   .post(createStall)
   .patch(updateStall)
   .delete(deleteStall);
+
+router.post("/add-to-section", addStallToSection);
 
 module.exports = router;

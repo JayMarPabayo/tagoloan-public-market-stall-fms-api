@@ -8,9 +8,7 @@ const getStalls = asyncHandler(async (req, res) => {
   const stalls = await Stall.find().populate("section").lean();
 
   if (!stalls?.length) {
-    return res.status(400).json({
-      message: "No stalls found",
-    });
+    return res.status(400).json({ message: "No stalls found" });
   }
 
   res.json(stalls);
@@ -20,16 +18,14 @@ const createStall = asyncHandler(async (req, res) => {
   const { section, cost, notes } = req.body;
 
   if (!section || !cost) {
-    return res.status(400).json({
-      message: "Stall cost is required.",
-    });
+    return res
+      .status(400)
+      .json({ message: "Section and stall cost are required." });
   }
 
   const sectionData = await Section.findById(section).exec();
   if (!sectionData) {
-    return res.status(400).json({
-      message: "Invalid section ID provided.",
-    });
+    return res.status(400).json({ message: "Invalid section ID provided." });
   }
 
   const group = sectionData.group;
@@ -41,19 +37,16 @@ const createStall = asyncHandler(async (req, res) => {
     .lean();
 
   const nextStallNumber = lastStall ? lastStall.number + 1 : 1;
-
   const newStall = { section, cost, notes, number: nextStallNumber };
 
   const stall = await Stall.create(newStall);
 
   if (stall) {
     res.status(201).json({
-      message: `New stall created`,
+      message: `New stall ${nextStallNumber} created in section ${sectionData.name}`,
     });
   } else {
-    res.status(400).json({
-      message: "Invalid stall data received.",
-    });
+    res.status(400).json({ message: "Invalid stall data received." });
   }
 });
 
@@ -61,17 +54,15 @@ const updateStall = asyncHandler(async (req, res) => {
   const { id, number, cost, notes } = req.body;
 
   if (!id || !number || !cost) {
-    return res.status(400).json({
-      message: "Stall cost & number are required.",
-    });
+    return res
+      .status(400)
+      .json({ message: "Stall ID, cost, and number are required." });
   }
 
   const stall = await Stall.findById(id).exec();
 
   if (!stall) {
-    return res.status(404).json({
-      message: "Stall not found",
-    });
+    return res.status(404).json({ message: "Stall not found" });
   }
 
   const existingStall = await Stall.findOne({
@@ -82,7 +73,7 @@ const updateStall = asyncHandler(async (req, res) => {
 
   if (existingStall) {
     return res.status(400).json({
-      message: `Stall number ${number} already exists.`,
+      message: `Stall number ${number} already exists in this section.`,
     });
   }
 
@@ -92,41 +83,91 @@ const updateStall = asyncHandler(async (req, res) => {
 
   const updatedStall = await stall.save();
 
-  res.json({
-    message: `Stall ${updatedStall.number} successfully updated`,
-  });
+  res.json({ message: `Stall ${updatedStall.number} successfully updated` });
 });
 
 const deleteStall = asyncHandler(async (req, res) => {
   const { id } = req.body;
 
   if (!id) {
-    return res.status(400).json({
-      message: "Stall ID Required",
-    });
+    return res.status(400).json({ message: "Stall ID Required" });
   }
 
   const stall = await Stall.findById(id).exec();
 
   if (!stall) {
-    return res.status(400).json({
-      message: "Stall not found",
-    });
+    return res.status(400).json({ message: "Stall not found" });
   }
 
-  await Rental.deleteMany({ stall: stall._id }).exec();
+  await Rental.deleteMany({ stall: stall._id });
 
   const deletedStall = await stall.deleteOne();
 
   const remainingStalls = await Stall.find({ section: stall.section }).lean();
 
   if (!remainingStalls.length) {
-    await Section.findByIdAndDelete(stall.section).exec();
+    await Section.findByIdAndDelete(stall.section);
   }
 
-  const response = `Stall ${deletedStall.number} deleted successfully`;
+  res.json({ message: `Stall ${deletedStall.number} deleted successfully` });
+});
 
-  res.json(response);
+const addStallToSection = asyncHandler(async (req, res) => {
+  const { section } = req.body;
+
+  if (!section) {
+    return res.status(400).json({ message: "Section ID is required." });
+  }
+
+  // Check if the section exists
+  const sectionData = await Section.findById(section).exec();
+  if (!sectionData) {
+    return res.status(400).json({ message: "Invalid section ID provided." });
+  }
+
+  // Find the highest stall number in the specified section
+  const lastStall = await Stall.findOne({ section })
+    .sort({ number: -1 })
+    .lean();
+
+  const nextStallNumber = lastStall ? lastStall.number + 1 : 1;
+
+  // Find all sections with the same group
+  const sectionsInSameGroup = await Section.find({
+    group: sectionData.group,
+  }).select("_id");
+
+  // Find all stalls in those sections with number >= nextStallNumber
+  const stallsToUpdate = await Stall.find({
+    section: { $in: sectionsInSameGroup },
+    number: { $gte: nextStallNumber },
+  }).exec();
+
+  // Increment the stall numbers of those stalls
+  await Promise.all(
+    stallsToUpdate.map(async (stall) => {
+      stall.number += 1; // Increment the stall number
+      await stall.save(); // Save the updated stall
+    })
+  );
+
+  // Create the new stall with default cost and notes
+  const newStall = {
+    section,
+    cost: 20,
+    notes: "",
+    number: nextStallNumber,
+  };
+
+  const stall = await Stall.create(newStall);
+
+  if (stall) {
+    res.status(201).json({
+      message: `New stall ${nextStallNumber} created in section ${sectionData.name}`,
+    });
+  } else {
+    res.status(400).json({ message: "Invalid stall data received." });
+  }
 });
 
 module.exports = {
@@ -134,4 +175,5 @@ module.exports = {
   createStall,
   updateStall,
   deleteStall,
+  addStallToSection,
 };
