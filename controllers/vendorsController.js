@@ -35,9 +35,9 @@ const getVendors = asyncHandler(async (req, res) => {
 });
 
 const createVendor = asyncHandler(async (req, res) => {
-  const { type, name, owner, address, contact } = req.body;
+  const { type, name, birthdate, owner, address, contact } = req.body;
 
-  if (!type || !name || !owner || !address || !contact) {
+  if (!type || !name || !birthdate || !owner || !address || !contact) {
     return res.status(400).json({
       message: "All fields are required.",
     });
@@ -56,7 +56,25 @@ const createVendor = asyncHandler(async (req, res) => {
     });
   }
 
-  const newVendor = { type, name, owner, address, contact };
+  // -- Check if the vendor is at least 18 years old
+  const birthDate = new Date(birthdate);
+  const today = new Date();
+  const age = today.getFullYear() - birthDate.getFullYear();
+  const monthDifference = today.getMonth() - birthDate.getMonth();
+  const dayDifference = today.getDate() - birthDate.getDate();
+
+  const isUnder18 =
+    age < 18 ||
+    (age === 18 &&
+      (monthDifference < 0 || (monthDifference === 0 && dayDifference < 0)));
+
+  if (isUnder18) {
+    return res.status(400).json({
+      message: "Vendor must be at least 18 years old.",
+    });
+  }
+
+  const newVendor = { type, name, birthdate, owner, address, contact };
 
   const vendor = await Vendor.create(newVendor);
 
@@ -72,9 +90,9 @@ const createVendor = asyncHandler(async (req, res) => {
 });
 
 const updateVendor = asyncHandler(async (req, res) => {
-  const { id, type, name, owner, address, contact } = req.body;
+  const { id, type, name, birthdate, owner, address, contact } = req.body;
 
-  if (!id || !type || !name || !owner || !address || !contact) {
+  if (!id || !type || !name || !birthdate || !owner || !address || !contact) {
     return res.status(400).json({
       message: "All fields are required.",
     });
@@ -99,8 +117,27 @@ const updateVendor = asyncHandler(async (req, res) => {
     });
   }
 
+  // -- Check if the vendor is at least 18 years old
+  const birthDate = new Date(birthdate);
+  const today = new Date();
+  const age = today.getFullYear() - birthDate.getFullYear();
+  const monthDifference = today.getMonth() - birthDate.getMonth();
+  const dayDifference = today.getDate() - birthDate.getDate();
+
+  const isUnder18 =
+    age < 18 ||
+    (age === 18 &&
+      (monthDifference < 0 || (monthDifference === 0 && dayDifference < 0)));
+
+  if (isUnder18) {
+    return res.status(400).json({
+      message: "Vendor must be at least 18 years old.",
+    });
+  }
+
   vendor.type = type;
   vendor.name = name;
+  vendor.birthdate = birthdate;
   vendor.owner = owner;
   vendor.address = address;
   vendor.contact = contact;

@@ -10,6 +10,10 @@ const vendorSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    birthdate: {
+      type: Date,
+      required: true,
+    },
     type: {
       type: String,
     },
