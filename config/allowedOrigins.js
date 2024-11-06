@@ -1,7 +1,6 @@
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://www.tagoloanpublicmarket.com",
-  "https://tagoloanpublicmarket.com",
+  "https://tagoloanpublicmarketstallfms.onrender.com",
 ];
 
 module.exports = allowedOrigins;
