@@ -18,10 +18,6 @@ const stallSchema = new mongoose.Schema(
     notes: {
       type: String,
     },
-    available: {
-      type: Boolean,
-      default: true,
-    },
   },
   {
     timestamps: true,

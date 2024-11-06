@@ -20,10 +20,13 @@ const paymentSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    date: {
+      type: Date,
+      required: true,
+    },
     orNumber: {
       type: String,
       required: true,
-      unique: true,
     },
   },
 

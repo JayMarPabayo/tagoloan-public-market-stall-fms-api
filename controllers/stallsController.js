@@ -5,15 +5,29 @@ const Section = require("../models/Section");
 const Rental = require("../models/Rental");
 
 const getStalls = asyncHandler(async (req, res) => {
-  const stalls = await Stall.find().populate("section").lean();
+  // Find all active rentals with endDate as null
+  const activeRentals = await Rental.find({ endDate: null }).lean();
 
-  if (!stalls?.length) {
+  // Create a set of stall IDs that are currently rented
+  const rentedStallIds = new Set(
+    activeRentals.map((rental) => rental.stall.toString())
+  );
+
+  // Retrieve all stalls and populate the section information
+  const initialStalls = await Stall.find().populate("section").lean();
+
+  if (!initialStalls?.length) {
     return res.status(400).json({ message: "No stalls found" });
   }
 
+  // Add `available` property to each stall based on rental status
+  const stalls = initialStalls.map((stall) => ({
+    ...stall,
+    available: !rentedStallIds.has(stall._id.toString()), // Set to true if not rented, false if rented
+  }));
+
   res.json(stalls);
 });
-
 const createStall = asyncHandler(async (req, res) => {
   const { section, cost, notes } = req.body;
 

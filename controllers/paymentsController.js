@@ -5,19 +5,8 @@ const Rental = require("../models/Rental");
 const User = require("../models/User");
 
 // -- OR Number Generator
-const generateOrNumber = async () => {
-  let orNumber;
-  let isUnique = false;
-
-  while (!isUnique) {
-    orNumber = Math.floor(1000000 + Math.random() * 9000000).toString(); // ensures 7 digits
-    const existingPayment = await Payment.findOne({ orNumber }).lean().exec();
-    if (!existingPayment) {
-      isUnique = true;
-    }
-  }
-
-  return orNumber;
+const generateOrNumber = () => {
+  return Math.floor(1000000 + Math.random() * 9000000).toString();
 };
 
 // @desc Get all payments
@@ -50,7 +39,7 @@ const createPayment = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if rental exists
+  // -- if rental exists
   const rentalExists = await Rental.findById(rental).lean().exec();
   if (!rentalExists) {
     return res.status(404).json({
@@ -58,7 +47,7 @@ const createPayment = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if user exists
+  // -- if user exists
   const userExists = await User.findById(user).lean().exec();
   if (!userExists) {
     return res.status(404).json({
@@ -66,20 +55,47 @@ const createPayment = asyncHandler(async (req, res) => {
     });
   }
 
+  // -- existing payments for this rental
+  const paymentCount = await Payment.countDocuments({ rental }).exec();
+
+  // -- new starting date
+  const newStartingDate = new Date(rentalExists.startDate);
+  newStartingDate.setDate(newStartingDate.getDate() + paymentCount);
+
+  // --number of payments to create
+  const numPayments = Math.floor(amount / cost);
+
   // Generate a unique 7-digit OR number
-  const orNumber = await generateOrNumber();
+  const orNumber = generateOrNumber();
 
-  const newPayment = { rental, user, cost, amount, orNumber };
+  const payments = [];
+  for (let i = 0; i < numPayments; i++) {
+    const paymentDate = new Date(newStartingDate);
+    paymentDate.setDate(paymentDate.getDate() + i);
 
-  const payment = await Payment.create(newPayment);
+    const newPayment = {
+      rental,
+      user,
+      cost,
+      amount: cost,
+      date: paymentDate,
+      orNumber,
+    };
 
-  if (payment) {
+    payments.push(newPayment);
+  }
+
+  // -- Create all payments at once
+  const createdPayments = await Payment.insertMany(payments);
+
+  if (createdPayments.length) {
     res.status(201).json({
-      message: "New payment created",
+      message: `${createdPayments.length} new payments created`,
+      payments: createdPayments,
     });
   } else {
     res.status(400).json({
-      message: "Invalid payment data received.",
+      message: "Failed to create payments.",
     });
   }
 });

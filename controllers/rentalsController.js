@@ -71,7 +71,7 @@ const createRental = asyncHandler(async (req, res) => {
   const rental = await Rental.create(newRental);
 
   if (rental) {
-    await Stall.findByIdAndUpdate(stall, { available: false });
+    // await Stall.findByIdAndUpdate(stall, { available: false });
 
     res.status(201).json({
       message: "New rental created",
@@ -171,7 +171,7 @@ const vacateRental = asyncHandler(async (req, res) => {
   rental.endDate = Date.now();
   await rental.save();
 
-  await Stall.findByIdAndUpdate(rental.stall, { available: true }).exec();
+  // await Stall.findByIdAndUpdate(rental.stall, { available: true }).exec();
 
   res.json({
     message: `Rental vacated successfully. Stall ${rental.stall} is now available.`,
