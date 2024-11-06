@@ -8,11 +8,15 @@ const getStalls = asyncHandler(async (req, res) => {
   // Find all active rentals with endDate as null
   const activeRentals = await Rental.find({ endDate: null }).lean();
 
-  // Create a set of stall IDs that are currently rented
-  const rentedStallIds = new Set(
-    activeRentals.map((rental) => rental.stall.toString())
-  );
+  const rentedStallIds = new Set();
+  const reservedStallIds = new Set();
 
+  activeRentals.forEach((rental) => {
+    rentedStallIds.add(rental.stall.toString());
+    if (new Date(rental.startDate) > new Date()) {
+      reservedStallIds.add(rental.stall.toString());
+    }
+  });
   // Retrieve all stalls and populate the section information
   const initialStalls = await Stall.find().populate("section").lean();
 
@@ -23,7 +27,8 @@ const getStalls = asyncHandler(async (req, res) => {
   // Add `available` property to each stall based on rental status
   const stalls = initialStalls.map((stall) => ({
     ...stall,
-    available: !rentedStallIds.has(stall._id.toString()), // Set to true if not rented, false if rented
+    available: !rentedStallIds.has(stall._id.toString()),
+    reserved: reservedStallIds.has(stall._id.toString()),
   }));
 
   res.json(stalls);
