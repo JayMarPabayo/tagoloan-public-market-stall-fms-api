@@ -15,6 +15,10 @@ const stallSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
+    banDeposit: {
+      type: Number,
+      required: true,
+    },
     notes: {
       type: String,
     },

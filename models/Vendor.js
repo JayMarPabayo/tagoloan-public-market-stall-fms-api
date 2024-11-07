@@ -14,10 +14,6 @@ const vendorSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    banDeposit: {
-      type: Number,
-      required: true,
-    },
     type: {
       type: String,
     },

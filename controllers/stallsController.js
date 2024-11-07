@@ -70,9 +70,9 @@ const createStall = asyncHandler(async (req, res) => {
 });
 
 const updateStall = asyncHandler(async (req, res) => {
-  const { id, number, cost, notes } = req.body;
+  const { id, number, cost, banDeposit, notes } = req.body;
 
-  if (!id || !number || !cost) {
+  if (!id || !number || !cost || !banDeposit) {
     return res
       .status(400)
       .json({ message: "Stall ID, cost, and number are required." });
@@ -98,6 +98,7 @@ const updateStall = asyncHandler(async (req, res) => {
 
   stall.number = number;
   stall.cost = cost;
+  stall.banDeposit = banDeposit;
   stall.notes = notes;
 
   const updatedStall = await stall.save();
@@ -173,7 +174,8 @@ const addStallToSection = asyncHandler(async (req, res) => {
   // Create the new stall with default cost and notes
   const newStall = {
     section,
-    cost: 20,
+    cost: lastStall.cost,
+    banDeposit: lastStall.banDeposit,
     notes: "",
     number: nextStallNumber,
   };

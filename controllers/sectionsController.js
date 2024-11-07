@@ -16,9 +16,16 @@ const getSections = asyncHandler(async (req, res) => {
 });
 
 const createSection = asyncHandler(async (req, res) => {
-  const { group, name, stallsPerRow, numberOfStalls } = req.body;
+  const {
+    group,
+    name,
+    stallsPerRow,
+    numberOfStalls,
+    cost = 20,
+    banDeposit,
+  } = req.body;
 
-  if (!group || !name || !stallsPerRow || !numberOfStalls) {
+  if (!group || !name || !stallsPerRow || !numberOfStalls || !banDeposit) {
     return res.status(400).json({
       message: "All fields are required.",
     });
@@ -54,7 +61,8 @@ const createSection = asyncHandler(async (req, res) => {
     for (let i = 0; i < numberOfStalls; i++) {
       stalls.push({
         section: section._id,
-        cost: 20,
+        cost: cost,
+        banDeposit: banDeposit,
         notes: "",
         number: startNumber + i,
       });
