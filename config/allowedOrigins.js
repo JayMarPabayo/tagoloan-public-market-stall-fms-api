@@ -1,7 +1,3 @@
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://192.168.254.103:3000",
-  "http://192.168.254.103:3500",
-];
+const allowedOrigins = ["http://192.168.101.70:3000"];
 
 module.exports = allowedOrigins;
