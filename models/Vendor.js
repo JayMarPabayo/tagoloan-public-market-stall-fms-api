@@ -14,9 +14,6 @@ const vendorSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
-    type: {
-      type: String,
-    },
     address: {
       type: String,
     },

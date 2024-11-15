@@ -35,9 +35,9 @@ const getVendors = asyncHandler(async (req, res) => {
 });
 
 const createVendor = asyncHandler(async (req, res) => {
-  const { type, name, birthdate, owner, address, contact } = req.body;
+  const { name, birthdate, owner, address, contact } = req.body;
 
-  if (!type || !name || !birthdate || !owner || !address || !contact) {
+  if (!name || !birthdate || !owner || !address || !contact) {
     return res.status(400).json({
       message: "All fields are required.",
     });
@@ -75,7 +75,6 @@ const createVendor = asyncHandler(async (req, res) => {
   }
 
   const newVendor = {
-    type,
     name,
     birthdate,
     owner,
@@ -97,9 +96,9 @@ const createVendor = asyncHandler(async (req, res) => {
 });
 
 const updateVendor = asyncHandler(async (req, res) => {
-  const { id, type, name, birthdate, owner, address, contact } = req.body;
+  const { id, name, birthdate, owner, address, contact } = req.body;
 
-  if (!id || !type || !name || !birthdate || !owner || !address || !contact) {
+  if (!id || !name || !birthdate || !owner || !address || !contact) {
     return res.status(400).json({
       message: "All fields are required.",
     });
@@ -142,7 +141,6 @@ const updateVendor = asyncHandler(async (req, res) => {
     });
   }
 
-  vendor.type = type;
   vendor.name = name;
   vendor.birthdate = birthdate;
   vendor.owner = owner;

@@ -4,6 +4,11 @@ const Rental = require("../models/Rental");
 const Vendor = require("../models/Vendor");
 const Stall = require("../models/Stall");
 const Payment = require("../models/Payment");
+const User = require("../models/User");
+
+const generateOrNumber = () => {
+  return Math.floor(1000000 + Math.random() * 9000000).toString();
+};
 
 const getRentals = asyncHandler(async (req, res) => {
   // Fetch all rentals with related vendor and stall data
@@ -23,6 +28,9 @@ const getRentals = asyncHandler(async (req, res) => {
       message: "No rentals found",
     });
   }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
 
   for (let rental of rentals) {
     const payments = await Payment.find({ rental: rental._id }).lean();
@@ -66,7 +74,13 @@ const createRental = asyncHandler(async (req, res) => {
     });
   }
 
-  const newRental = { vendor, stall, startDate };
+  const newRental = {
+    vendor,
+    stall,
+    startDate,
+    banAmount: stallExists.banDeposit,
+    banPaid: 0,
+  };
 
   const rental = await Rental.create(newRental);
 
@@ -171,10 +185,117 @@ const vacateRental = asyncHandler(async (req, res) => {
   rental.endDate = Date.now();
   await rental.save();
 
-  // await Stall.findByIdAndUpdate(rental.stall, { available: true }).exec();
-
   res.json({
     message: `Rental vacated successfully. Stall ${rental.stall} is now available.`,
+  });
+});
+
+const payBanDeposit = asyncHandler(async (req, res) => {
+  const { id, amount } = req.body;
+
+  const parsedAmount = parseFloat(amount);
+
+  if (!id || isNaN(parsedAmount)) {
+    return res.status(400).json({
+      message: "Rental ID and valid amount are required",
+    });
+  }
+  const rental = await Rental.findById(id).exec();
+
+  if (!rental) {
+    return res.status(404).json({
+      message: "Rental not found",
+    });
+  }
+
+  const remainingBalance = rental.banAmount - rental.banPaid;
+  if (parsedAmount > remainingBalance) {
+    return res.status(400).json({
+      message: `Amount exceeds the remaining balance of ${remainingBalance}`,
+    });
+  }
+
+  rental.banPaid += parsedAmount;
+  await rental.save();
+
+  res.json({
+    message: `Ban deposit of ${parsedAmount} added successfully. Total paid: ${
+      rental.banPaid
+    }. Remaining balance: ${rental.banAmount - rental.banPaid}`,
+  });
+});
+
+const compensateBanDeposit = asyncHandler(async (req, res) => {
+  const { id, amount, user, cost } = req.body;
+
+  const parsedAmount = parseFloat(amount);
+
+  if (!id || isNaN(parsedAmount)) {
+    return res.status(400).json({
+      message: "Rental ID and valid amount are required",
+    });
+  }
+  const rental = await Rental.findById(id).exec();
+
+  if (!rental) {
+    return res.status(404).json({
+      message: "Rental not found",
+    });
+  }
+
+  const userExists = await User.findById(user).lean().exec();
+  if (!userExists) {
+    return res.status(404).json({
+      message: "User not found",
+    });
+  }
+
+  const remainingBanPaid = rental.banPaid - parsedAmount;
+
+  if (remainingBanPaid < 0) {
+    return res.status(400).json({
+      message: `Insufficient ban deposit paid. Available balance is ${rental.banPaid}.`,
+    });
+  }
+
+  rental.banPaid = remainingBanPaid;
+  await rental.save();
+
+  // -- existing payments for this rental
+  const paymentCount = await Payment.countDocuments({ rental }).exec();
+
+  // -- new starting date
+  const newStartingDate = new Date(rental.startDate);
+  newStartingDate.setDate(newStartingDate.getDate() + paymentCount);
+
+  // --number of payments to create
+  const numPayments = Math.floor(parsedAmount / cost);
+
+  // Generate a unique 7-digit OR number
+  const orNumber = generateOrNumber();
+
+  const payments = [];
+  for (let i = 0; i < numPayments; i++) {
+    const paymentDate = new Date(newStartingDate);
+    paymentDate.setDate(paymentDate.getDate() + i);
+
+    const newPayment = {
+      rental,
+      user,
+      cost,
+      amount: cost,
+      date: paymentDate,
+      orNumber,
+    };
+
+    payments.push(newPayment);
+  }
+
+  // -- Create all payments at once
+  await Payment.insertMany(payments);
+
+  res.json({
+    message: `Due amount of ${parsedAmount} has been paid successfully. Total paid: ${rental.banAmount}. Remaining balance paid: ${remainingBanPaid}`,
   });
 });
 
@@ -184,4 +305,6 @@ module.exports = {
   updateRental,
   deleteRental,
   vacateRental,
+  payBanDeposit,
+  compensateBanDeposit,
 };

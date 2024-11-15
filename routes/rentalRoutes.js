@@ -6,6 +6,8 @@ const {
   updateRental,
   deleteRental,
   vacateRental,
+  payBanDeposit,
+  compensateBanDeposit,
 } = require("../controllers/rentalsController");
 
 const router = express.Router();
@@ -20,5 +22,7 @@ router
   .delete(deleteRental);
 
 router.post("/vacate", vacateRental);
+router.post("/pay-ban-deposit", payBanDeposit);
+router.post("/compensate-ban-deposit", compensateBanDeposit);
 
 module.exports = router;

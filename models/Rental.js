@@ -16,6 +16,13 @@ const rentalSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    banAmount: {
+      type: Number,
+      required: true,
+    },
+    banPaid: {
+      type: Number,
+    },
     endDate: {
       type: Date,
       default: null,

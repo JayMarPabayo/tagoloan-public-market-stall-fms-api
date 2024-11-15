@@ -51,7 +51,15 @@ const login = asyncHandler(async (req, res) => {
   });
 
   // Send accessToken containing username and role
-  res.json({ accessToken });
+  res.json({
+    accessToken,
+    user: {
+      id: foundUser.id,
+      fullname: foundUser.fullname,
+      username: foundUser.username,
+      role: foundUser.role,
+    },
+  });
 });
 
 const updateAccount = asyncHandler(async (req, res) => {
@@ -110,8 +118,15 @@ const updateAccount = asyncHandler(async (req, res) => {
 
   await user.save();
 
+  // Send accessToken containing username and role
   res.json({
     message: `Account successfully updated`,
+    user: {
+      id: user.id,
+      fullname: user.fullname,
+      username: user.username,
+      role: user.role,
+    },
   });
 });
 
