@@ -33,6 +33,7 @@ const getStalls = asyncHandler(async (req, res) => {
 
   res.json(stalls);
 });
+
 const createStall = asyncHandler(async (req, res) => {
   const { section, cost, notes } = req.body;
 
@@ -119,6 +120,14 @@ const deleteStall = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Stall not found" });
   }
 
+  const existingRentals = await Rental.find({ stall: stall._id }).lean();
+
+  if (existingRentals.length > 0) {
+    return res
+      .status(400)
+      .json({ message: "Cannot delete stall with rental record." });
+  }
+
   await Rental.deleteMany({ stall: stall._id });
 
   const deletedStall = await stall.deleteOne();
@@ -139,39 +148,33 @@ const addStallToSection = asyncHandler(async (req, res) => {
     return res.status(400).json({ message: "Section ID is required." });
   }
 
-  // Check if the section exists
   const sectionData = await Section.findById(section).exec();
   if (!sectionData) {
     return res.status(400).json({ message: "Invalid section ID provided." });
   }
 
-  // Find the highest stall number in the specified section
   const lastStall = await Stall.findOne({ section })
     .sort({ number: -1 })
     .lean();
 
   const nextStallNumber = lastStall ? lastStall.number + 1 : 1;
 
-  // Find all sections with the same group
   const sectionsInSameGroup = await Section.find({
     group: sectionData.group,
   }).select("_id");
 
-  // Find all stalls in those sections with number >= nextStallNumber
   const stallsToUpdate = await Stall.find({
     section: { $in: sectionsInSameGroup },
     number: { $gte: nextStallNumber },
   }).exec();
 
-  // Increment the stall numbers of those stalls
   await Promise.all(
     stallsToUpdate.map(async (stall) => {
-      stall.number += 1; // Increment the stall number
-      await stall.save(); // Save the updated stall
+      stall.number += 1;
+      await stall.save();
     })
   );
 
-  // Create the new stall with default cost and notes
   const newStall = {
     section,
     cost: lastStall.cost,
