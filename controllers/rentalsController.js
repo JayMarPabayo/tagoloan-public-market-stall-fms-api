@@ -79,7 +79,7 @@ const createRental = asyncHandler(async (req, res) => {
     stall,
     startDate,
     banAmount: stallExists.banDeposit,
-    banPaid: 0,
+    banPaid: stallExists.banDeposit,
   };
 
   const rental = await Rental.create(newRental);
